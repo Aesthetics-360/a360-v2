@@ -18,6 +18,25 @@ exist), but the "Data Depth" numbers are dated 2026-06-14 and were not re-verifi
 **This needs a real content pass by someone who knows what each new surface actually does —
 not a guess from git history.** Treat "What This Project Is" below as incomplete, not wrong.
 
+## What already exists here (check before building, verified 2026-09-22)
+
+- **Active GSD planning cycle — "Sidebar Restructure"** — `.planning/` (`STATE.md`, `PROJECT.md`,
+  `ROADMAP.md`, `phases/01-sidebar-restructure/`). `STATE.md` itself is dated 2026-07-23, older
+  than several commits below — re-check `git log -- .planning/` before assuming it's still open.
+- **Command Center / portfolio registry** — `app/dashboard/portfolio/`, DB-backed project
+  registry, Data Sources, History, PM Home.
+- **Podcast Navigator** — `app/dashboard/podcasts/` (also `app/podcast/`), heavily worked through
+  2026-08-26.
+- **Agent Exchange** — canonical URL `https://a360-v2-wse.vercel.app/exchange`; the
+  `a360-v2.vercel.app` twin 308-redirects there (`proxy.ts`, `DUPLICATE_HOSTS`). Listings managed
+  ONLY via `/admin/exchange` (DB `exchange_agents`), never a hardcoded array. Deploy/domain rules:
+  `_DEPLOY_SOURCE.md`.
+- **Global Library** — `app/dashboard/global-library/`.
+- **Scaffolding pages with fake data — do not extend**: `/dashboard`, `/dashboard/consultation`,
+  `/dashboard/reach`, `/dashboard/tcp`, `/dashboard/chat`, `/dashboard/rag`.
+- **Prior CTO assessment reference docs** (2026-06-14) — `Core Docs/` (infra map, data audit,
+  product surfaces, cleanup actions, GL strategy).
+
 ## What This Project Is
 
 **Two products in one Next.js app (plus newer surfaces — see warning above):**
