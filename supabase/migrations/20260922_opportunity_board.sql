@@ -184,11 +184,29 @@ create index if not exists ix_observation_patient
   on opportunity_observation (practice_id, patient_id);
 
 -- ---------------------------------------------------------------------------
--- Note for whoever reads this next.
+-- Row level security. Ops enables RLS on every table with a single
+-- service_role_all policy - anon and authenticated are denied by default and
+-- access goes through the service role, server-side. These tables match that.
 --
--- Tenancy here is application-enforced, not RLS-enforced - consistent with the
--- rest of Ops. practice_id is applied server-side from the token and is never
--- accepted from caller input. The capability-layer contract entry is where that
--- is actually guaranteed, which makes it a tenancy control rather than
--- paperwork.
+-- CORRECTION: an earlier version of this file claimed tenancy here was
+-- application-enforced because RLS was off. That was wrong - it generalised a
+-- fact about Global V3 onto Ops. RLS IS on across Ops, and the first applied
+-- version of this migration left opportunity_observation as the one table in
+-- the schema without it. Fixed 2026-09-22.
+-- ---------------------------------------------------------------------------
+alter table opportunity_observation enable row level security;
+
+create policy service_role_all on opportunity_observation
+  as permissive for all to service_role
+  using (true) with check (true);
+
+-- ---------------------------------------------------------------------------
+-- Consequence worth stating, because it shapes the next step.
+--
+-- With RLS on and no anon policy, a browser holding the anon key reads ZERO
+-- rows. The board therefore CANNOT talk to Ops directly from the client, and a
+-- service_role key must never be shipped to a browser. A server-side read path
+-- is required: the a360-mcp capability binding, or a thin proxy in front of it.
+-- Until one exists the board runs on its in-memory repository, which is a
+-- supported mode rather than a gap.
 -- ---------------------------------------------------------------------------
