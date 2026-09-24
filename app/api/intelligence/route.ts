@@ -60,7 +60,20 @@ function splitHead(text: string, label: string): { body: string; items: string[]
   return { body: text.slice(m[0].length).trimStart(), items: m[1].split("|").map((s) => s.trim()).filter(Boolean) };
 }
 
-export async function POST(req: NextRequest) {
+// STOPGAP (2026-09-24, Chris-approved): disabled pending the source-non-disclosure fix.
+// Kiro found this endpoint returning podcast/video source identifiers (episode/video titles,
+// hosts) with no auth gate -- a violation of the no-source-disclosure rule. The MCP-side
+// sanitizer (a360-mcp MCP-204, merged to master) does not cover this route, which calls
+// lib/retrieval/sources directly rather than through the MCP knowledge.search tool.
+// Remove this block once the same source-stripping fix lands here and an auth gate is added.
+export async function POST(_req: NextRequest) {
+  return new Response(
+    JSON.stringify({ error: "Intelligence endpoint temporarily disabled" }),
+    { status: 503, headers: { "Content-Type": "application/json" } }
+  );
+}
+
+async function _disabledPOST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as { query?: string };
   const q = (body.query ?? "").trim().replace(/<[^>]*>/g, "");
   const enc = new TextEncoder();
