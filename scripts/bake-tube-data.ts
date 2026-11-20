@@ -60,6 +60,8 @@ async function fetchAll(): Promise<SourceRow[]> {
         "video_id,video_title,video_url,manufacturer_name,audience,content_type," +
           "treatments,anatomy_areas,concerns,summary,patient_safe,chunk_count,published_at",
       )
+      // Videos the model-screened library review excluded or quarantined (IPI-1177) are not baked.
+      .eq("library_status", "active")
       .order("video_id")
       .range(offset, offset + PAGE - 1);
     if (error) throw new Error(`youtube_videos fetch failed: ${error.message}`);
