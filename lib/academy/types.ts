@@ -62,6 +62,8 @@ export interface VideoSummary {
   youtubeId: string | null;
   /** First ~280 chars of cleaned transcript, for previews/search. */
   excerpt: string;
+  /** Library label from the model-screened review (see labels.ts); absent when unlabelled. */
+  labels?: import("./labels").AcademyLabels;
 }
 
 /** Full per-video record (written to its own JSON file). */
