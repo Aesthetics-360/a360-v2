@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, ImageIcon, Layers } from "lucide-react";
-import { getIllustrations } from "@/lib/academy/server";
+import { getBrowsableIllustrations } from "@/lib/academy/server";
 import { IllustrationGallery } from "@/components/academy/illustration-gallery";
 import { TOPIC_BY_ID } from "@/lib/academy/taxonomy";
 
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default function IllustrationsPage() {
-  const videos = getIllustrations();
+  const videos = getBrowsableIllustrations();
   const totalFrames = videos.reduce((n, v) => n + v.frameCount, 0);
 
   // Topic facets present across the illustration set (for filter chips).

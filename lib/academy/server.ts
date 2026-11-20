@@ -17,6 +17,7 @@ import type {
   VideoIllustrations,
   VideoSummary,
 } from "./types";
+import { isBrowsableVideo, labelsFor, type Overlay } from "./labels";
 
 const DATA_DIR = path.join(process.cwd(), "lib", "academy", "data");
 
@@ -30,9 +31,60 @@ function readJson<T>(file: string): T {
   return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), "utf8")) as T;
 }
 
+let _fullIndex: AcademyIndex | null = null;
+let _overlay: Overlay | null = null;
+
+function getOverlay(): Overlay {
+  if (!_overlay) {
+    try {
+      _overlay = readJson<Overlay>("label-overlay.json");
+    } catch {
+      _overlay = {}; // no overlay file: every video stays as it was
+    }
+  }
+  return _overlay;
+}
+
+/**
+ * Every baked video with its library label attached, including videos the review left out of
+ * browse and search. Only direct lesson links (by slug) use this.
+ */
+export function getFullIndex(): AcademyIndex {
+  if (!_fullIndex) {
+    const raw = readJson<AcademyIndex>("index.json");
+    const overlay = getOverlay();
+    _fullIndex = {
+      ...raw,
+      videos: raw.videos.map((v) => {
+        const labels = labelsFor(v.youtubeId, overlay);
+        return labels ? { ...v, labels } : v;
+      }),
+    };
+  }
+  return _fullIndex;
+}
+
+/** The index for browse, search and the topic lists: videos the review excluded or quarantined are left out. */
 export function getIndex(): AcademyIndex {
-  if (!_index) _index = readJson<AcademyIndex>("index.json");
+  if (!_index) {
+    const full = getFullIndex();
+    _index = { ...full, videos: full.videos.filter(isBrowsableVideo) };
+  }
   return _index;
+}
+
+const _hiddenSlugs = new Set<string>();
+let _hiddenReady = false;
+
+/** True when a lesson slug is left out of browse and search. */
+export function isHiddenSlug(slug: string): boolean {
+  if (!_hiddenReady) {
+    for (const v of getFullIndex().videos) {
+      if (!isBrowsableVideo(v)) _hiddenSlugs.add(v.slug);
+    }
+    _hiddenReady = true;
+  }
+  return _hiddenSlugs.has(slug);
 }
 
 export function getModules(): Module[] {
@@ -87,7 +139,13 @@ export function getTopicVideos(topicId: string): VideoSummary[] {
 }
 
 export function getAllTopicEntries(): TopicEntry[] {
-  if (!_topics) _topics = readJson<TopicEntry[]>("topics.json");
+  if (!_topics) {
+    // Topic citations never point at a video the review left out.
+    _topics = readJson<TopicEntry[]>("topics.json").map((t) => ({
+      ...t,
+      citations: t.citations.filter((c) => !isHiddenSlug(c.videoSlug)),
+    }));
+  }
   return _topics;
 }
 
@@ -111,7 +169,8 @@ export function getVideo(slug: string): VideoDetail | null {
 }
 
 export function getVideoSummary(slug: string): VideoSummary | undefined {
-  return getIndex().videos.find((v) => v.slug === slug);
+  // Direct lesson links keep working for every baked video, labelled or not.
+  return getFullIndex().videos.find((v) => v.slug === slug);
 }
 
 /** Curated "featured" lessons for the academy landing page. */
@@ -162,6 +221,11 @@ export function getIllustrations(): VideoIllustrations[] {
   return _illustrations;
 }
 
+/** Illustration sets for the gallery: videos the review left out are not listed. */
+export function getBrowsableIllustrations(): VideoIllustrations[] {
+  return getIllustrations().filter((v) => !v.slug || !isHiddenSlug(v.slug));
+}
+
 /** Illustration set for a single video by slug, if any. */
 export function getVideoIllustrations(
   slug: string
@@ -171,7 +235,7 @@ export function getVideoIllustrations(
 
 /** Flat list of all illustration frames with their parent video context. */
 export function getAllIllustrationFrames() {
-  return getIllustrations().flatMap((v) =>
+  return getBrowsableIllustrations().flatMap((v) =>
     v.frames.map((f) => ({
       ...f,
       videoId: v.videoId,

@@ -9,7 +9,7 @@
 
 import fs from "fs";
 import path from "path";
-import { getIndex } from "./server";
+import { getIndex, isHiddenSlug } from "./server";
 import type { Topic, VideoSummary } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "lib", "academy", "data");
@@ -21,9 +21,12 @@ let _rows: SearchRow[] | null = null;
 
 function getRows(): SearchRow[] {
   if (!_rows) {
-    _rows = JSON.parse(
-      fs.readFileSync(path.join(DATA_DIR, "search-segments.json"), "utf8")
-    ) as SearchRow[];
+    // Segments of a video the review left out are not searchable.
+    _rows = (
+      JSON.parse(
+        fs.readFileSync(path.join(DATA_DIR, "search-segments.json"), "utf8")
+      ) as SearchRow[]
+    ).filter((r) => !isHiddenSlug(r[0]));
   }
   return _rows;
 }
